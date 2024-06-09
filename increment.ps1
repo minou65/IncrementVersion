@@ -1,15 +1,15 @@
 [CmdletBinding()]
 param (
-    [Parameter()]
+    [Parameter(Mandatory=$true)]
     [String]
     $BuildPath,
-    [Parameter()]
+    [Parameter(Mandatory=$true)]
     [String]
     $BuildSourcePath,
     [Parameter()]
     [String]
     $BuildProjectName,
-    [Parameter()]
+    [Parameter(Mandatory=$false)]
     [String]
     $FileName = "version.h"
 )
@@ -18,25 +18,49 @@ try{
     Write-Output $BuildPath
     Write-Output $BuildSourcePath
     Write-Output $BuildProjectName
-
+    
     $FilePath = Join-Path $BuildSourcePath $FileName
 
     $content = Get-Content $FilePath
-    $first = $content.IndexOf('"')
-    $last = $content.LastIndexOf('"')
 
-    $version = $content.Substring($first + 1, $last - $first - 1).Split('.')  
-    $version[3] = [int]$version[3] + 1  
+    $isOldStyle = ($null -eq $($content | Select-String -Pattern '#define VERSION_BUILD'))
 
-    $NewVersion = $version -join '.'
-
-    $Output = '#define VERSION "' + $NewVersion + '"'
+    if ($isOldStyle) {
+        $first = $content.IndexOf('"')
+        $last = $content.LastIndexOf('"')
     
-    $Output | Set-Content $FilePath
-    $Output | Set-Content $(Join-Path $BuildPath $FileName)
+        $version = $content.Substring($first + 1, $last - $first - 1).Split('.')  
+        $currentMajorVersion = [int]$version[0]
+        $currentMinorVersion = [int]$version[1] 
+        $currentPatchVersion = [int]$version[2]
+        $currentBuildVersion = [int]$version[3] 
+    } else {
+        $currentMajorVersion = $content | Where-Object { $_ -match "#define VERSION_MAJOR" } | ForEach-Object {$_ -split " " | Select-Object -Last 1}
+        $currentMinorVersion = $content | Where-Object { $_ -match "#define VERSION_MINOR" } | ForEach-Object {$_ -split " " | Select-Object -Last 1}
+        $currentPatchVersion = $content | Where-Object { $_ -match "#define VERSION_PATCH" } | ForEach-Object {$_ -split " " | Select-Object -Last 1}
+        $currentBuildVersion = $content | Where-Object { $_ -match "#define VERSION_BUILD" } | ForEach-Object {$_ -split " " | Select-Object -Last 1}
+    }
+
+    $newBuildVersion = [int]$currentBuildVersion + 1
+
+    $newFullVersion = "$($currentMajorVersion).$($currentMinorVersion).$($currentPatchVersion).$($newBuildVersion)"
+    $newVersionDate = Get-Date -Format "yyyy-MM-dd"
+    $newVersionTime = Get-Date -Format "HH:mm:ss"
+
+    $versionContent = "#define VERSION_MAJOR $currentMajorVersion
+#define VERSION_MINOR $currentMinorVersion
+#define VERSION_PATCH $currentPatchVersion
+#define VERSION_BUILD $newBuildVersion
+#define VERSION_DATE `"$newVersionDate`"
+#define VERSION_TIME `"$newVersionTime`"
+#define VERSION `"$newFullVersion`"
+#define VERSION_STR `"$newFullVersion ($newVersionDate $newVersionTime)`""
 
 
-    Write-Output "Version incremented to $($NewVersion)"
+    $versionContent | Set-Content $(Join-Path $BuildPath $FileName)
+    $versionContent | Set-Content $FilePath
+
+    Write-Output "Build version incremented to $($newFullVersion)"
 }
 catch{
     Write-Error $_.Exception.Message

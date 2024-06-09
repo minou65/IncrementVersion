@@ -32,3 +32,11 @@ Bei jedem erfolgreichen Build wird die Buildversion nun automatisch erhöht
 Mehr zur Seamtic Versionierung
 https://semver.org/lang/de/
 
+
+{build.project_path}
+{vm.last.buildpath}
+{build.project_name}
+{menu.fsupload.littlefs.runtime.tools.mklittlefs.path}
+
+
+https://www.visualmicro.com/forums/YaBB.pl?num=1659257178/4
