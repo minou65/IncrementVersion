@@ -56,11 +56,27 @@ try{
 #define VERSION `"$newFullVersion`"
 #define VERSION_STR `"$newFullVersion ($newVersionDate $newVersionTime)`""
 
+    $maxAttempts = 5
+    $attempt = 0
+    $success = $false
 
-    $versionContent | Set-Content $(Join-Path $BuildPath $FileName)
-    $versionContent | Set-Content $FilePath
+    do {
+        try {
+            $versionContent | Set-Content $(Join-Path $BuildPath $FileName) -ErrorAction Stop
+            $versionContent | Set-Content $FilePath -ErrorAction Stop
+            $success = $true
+        } catch {
+            Start-Sleep -Seconds 1
+            $attempt++
+        }
+    } while (-not $success -and $attempt -lt $maxAttempts)
 
-    Write-Output "Build version incremented to $($newFullVersion)"
+    if (-not $success) {
+         Write-Host "Error: The file could not be written after $maxAttempts attempts."
+    } else {
+        Write-Output "Build version incremented to $($newFullVersion)"
+    }
+
 }
 catch{
     Write-Error $_.Exception.Message
