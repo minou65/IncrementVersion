@@ -50,6 +50,8 @@ try{
     $versionContent = "#define VERSION_MAJOR $currentMajorVersion
 #define VERSION_MINOR $currentMinorVersion
 #define VERSION_PATCH $currentPatchVersion
+
+// Automatically generated build version. Do not modify.
 #define VERSION_BUILD $newBuildVersion
 #define VERSION_DATE `"$newVersionDate`"
 #define VERSION_TIME `"$newVersionTime`"
@@ -66,7 +68,7 @@ try{
             $versionContent | Set-Content $FilePath -ErrorAction Stop
             $success = $true
         } catch {
-            Start-Sleep -Seconds 1
+            Start-Sleep -Seconds 2
             $attempt++
         }
     } while (-not $success -and $attempt -lt $maxAttempts)
